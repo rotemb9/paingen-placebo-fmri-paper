@@ -1,0 +1,79 @@
+outcome,modality,estimate,CI,SE,t,DF,p
+gray_matter,thermal,0.048,"[ -0.02, 0.117]",0.035,1.396,140.8,0.165
+gray_matter,mechanical,0.139,"[ 0.066, 0.212]",0.037,3.781,88.3,0
+white_matter,thermal,-0.014,"[-0.081, 0.053]",0.034,-0.417,112.2,0.677
+white_matter,mechanical,0.148,"[ 0.081, 0.215]",0.034,4.374,114.4,0
+csf,thermal,-0.017,"[-0.082, 0.048]",0.033,-0.51,249.5,0.61
+csf,mechanical,0.133,"[ 0.064, 0.202]",0.035,3.796,283.5,0
+nps,thermal,0.198,"[ 0.131, 0.265]",0.034,5.831,106.2,0
+nps,mechanical,0.202,"[ 0.128, 0.276]",0.037,5.459,63,0
+siips,thermal,0.229,"[ 0.165, 0.294]",0.033,6.995,302.3,0
+siips,mechanical,0.241,"[  0.17, 0.312]",0.036,6.773,67.9,0
+siipspos_dmPFC,thermal,0.023,"[-0.042, 0.087]",0.033,0.699,272.7,0.485
+siipspos_dmPFC,mechanical,0.072,"[-0.004, 0.148]",0.038,1.878,89,0.064
+siipspos_R_MTG,thermal,-0.02,"[-0.087, 0.047]",0.034,-0.591,226.3,0.555
+siipspos_R_MTG,mechanical,-0.005,"[-0.072, 0.061]",0.034,-0.16,171.3,0.873
+siipsneg_R_LG,thermal,0.093,"[ 0.029, 0.157]",0.032,2.884,199.5,0.004
+siipsneg_R_LG,mechanical,-0.011,"[-0.081, 0.058]",0.035,-0.323,106.5,0.747
+siipsneg_L_STG,thermal,0.011,"[-0.054, 0.076]",0.033,0.329,128.8,0.743
+siipsneg_L_STG,mechanical,-0.091,"[-0.158,-0.024]",0.034,-2.697,120,0.008
+siipsneg_L_NAc,thermal,-0.041,"[-0.105, 0.022]",0.032,-1.278,189.5,0.203
+siipsneg_L_NAc,mechanical,-0.03,"[-0.104, 0.045]",0.037,-0.794,71.2,0.43
+siipsneg_R_TP,thermal,0.023,"[-0.047, 0.093]",0.035,0.646,146,0.519
+siipsneg_R_TP,mechanical,-0.079,"[-0.144,-0.013]",0.033,-2.35,218.3,0.02
+siipsneg_L_ITG,thermal,0.035,"[-0.029, 0.098]",0.032,1.077,391.6,0.282
+siipsneg_L_ITG,mechanical,-0.022,"[-0.088, 0.044]",0.033,-0.663,199.9,0.508
+siipsneg_mid_precen,thermal,0.029,"[-0.034, 0.091]",0.032,0.901,354.4,0.368
+siipsneg_mid_precen,mechanical,-0.028,"[-0.098, 0.043]",0.035,-0.78,90.2,0.438
+siipsneg_vmpfc,thermal,0.063,"[     0, 0.127]",0.032,1.97,347.2,0.05
+siipsneg_vmpfc,mechanical,-0.041,"[-0.112,  0.03]",0.036,-1.154,55.4,0.253
+suppress_siipsneg_R_NAc,thermal,-0.097,"[-0.162,-0.033]",0.032,-3.006,120.2,0.003
+suppress_siipsneg_R_NAc,mechanical,-0.085,"[-0.165,-0.005]",0.04,-2.099,93.6,0.039
+suppress_siipsneg_L_dlPFC,thermal,-0.066,"[-0.128,-0.004]",0.031,-2.106,211.1,0.036
+suppress_siipsneg_L_dlPFC,mechanical,-0.06,"[-0.126, 0.006]",0.033,-1.794,274.9,0.074
+suppress_siipsneg_R_dlPFC,thermal,-0.061,"[-0.123,     0]",0.031,-1.971,540,0.049
+suppress_siipsneg_R_dlPFC,mechanical,-0.088,"[ -0.16,-0.015]",0.037,-2.39,219.2,0.018
+suppress_siipsneg_R_S2,thermal,-0.097,"[-0.163,-0.031]",0.033,-2.911,345.6,0.004
+suppress_siipsneg_R_S2,mechanical,-0.108,"[-0.176, -0.04]",0.034,-3.13,121.6,0.002
+suppress_siipsneg_R_SMC,thermal,-0.109,"[-0.171,-0.048]",0.031,-3.49,307.3,0.001
+suppress_siipsneg_R_SMC,mechanical,-0.062,"[-0.132, 0.007]",0.035,-1.783,116.4,0.077
+suppress_siipsneg_L_Precun,thermal,0.036,"[-0.033, 0.105]",0.035,1.017,222.8,0.31
+suppress_siipsneg_L_Precun,mechanical,-0.052,"[-0.121, 0.018]",0.035,-1.472,101.7,0.144
+pain_pathways_Thal_VPLM_R,thermal,0.035,"[-0.033, 0.103]",0.034,1.017,117.2,0.311
+pain_pathways_Thal_VPLM_R,mechanical,0.054,"[-0.013, 0.121]",0.034,1.583,144.1,0.116
+pain_pathways_Thal_VPLM_L,thermal,0.035,"[-0.029, 0.099]",0.033,1.07,232.6,0.286
+pain_pathways_Thal_VPLM_L,mechanical,0.051,"[-0.023, 0.124]",0.037,1.355,127.9,0.178
+pain_pathways_Thal_MD,thermal,0.083,"[ 0.015, 0.151]",0.035,2.41,180.2,0.017
+pain_pathways_Thal_MD,mechanical,0.065,"[-0.006, 0.136]",0.036,1.813,219.3,0.071
+pain_pathways_dpIns_L,thermal,0.056,"[-0.012, 0.124]",0.034,1.628,129.9,0.106
+pain_pathways_dpIns_L,mechanical,0.142,"[ 0.068, 0.215]",0.037,3.842,87.3,0
+pain_pathways_dpIns_R,thermal,0.093,"[ 0.029, 0.157]",0.033,2.855,230.5,0.005
+pain_pathways_dpIns_R,mechanical,0.136,"[ 0.064, 0.208]",0.036,3.758,79.6,0
+pain_pathways_aMCC_MPFC,thermal,0.152,"[ 0.084,  0.22]",0.034,4.47,88,0
+pain_pathways_aMCC_MPFC,mechanical,0.171,"[ 0.093, 0.248]",0.039,4.377,94.3,0
+canlab2018_mean_Ctx_8C_L,thermal,0.033,"[-0.032, 0.097]",0.033,0.991,221,0.323
+canlab2018_mean_Ctx_8C_L,mechanical,0.038,"[ -0.03, 0.105]",0.034,1.108,238.3,0.269
+canlab2018_mean_Ctx_a47r_R,thermal,0.031,"[-0.032, 0.094]",0.032,0.955,328.4,0.341
+canlab2018_mean_Ctx_a47r_R,mechanical,0.003,"[-0.063,  0.07]",0.034,0.096,121.9,0.923
+canlab2018_mean_Ctx_p9_46v_R,thermal,0.102,"[  0.04, 0.164]",0.032,3.23,243.5,0.001
+canlab2018_mean_Ctx_p9_46v_R,mechanical,0.043,"[-0.029, 0.115]",0.036,1.188,142.6,0.237
+canlab2018_mean_Ctx_46_L,thermal,0.081,"[ 0.016, 0.145]",0.033,2.464,269.6,0.014
+canlab2018_mean_Ctx_46_L,mechanical,0.087,"[ 0.014, 0.161]",0.037,2.356,108.3,0.02
+canlab2018_mean_Ctx_a10p_R,thermal,0.022,"[-0.042, 0.085]",0.032,0.669,513.6,0.504
+canlab2018_mean_Ctx_a10p_R,mechanical,0.038,"[-0.031, 0.107]",0.035,1.094,183.1,0.276
+canlab2018_mean_Ctx_11l_L,thermal,-0.008,"[ -0.08, 0.064]",0.036,-0.219,178.4,0.827
+canlab2018_mean_Ctx_11l_L,mechanical,0.051,"[-0.015, 0.116]",0.033,1.519,172.1,0.131
+canlab2018_mean_Ctx_11l_R,thermal,0.015,"[-0.057, 0.086]",0.036,0.402,164.6,0.688
+canlab2018_mean_Ctx_11l_R,mechanical,0.034,"[-0.026, 0.094]",0.031,1.103,867.8,0.27
+canlab2018_mean_Ctx_p10p_R,thermal,0.027,"[-0.035, 0.088]",0.031,0.852,836.3,0.394
+canlab2018_mean_Ctx_p10p_R,mechanical,0.041,"[-0.034, 0.115]",0.038,1.068,169.7,0.287
+canlab2018_mean_V_Striatum_L,thermal,-0.034,"[-0.096, 0.028]",0.031,-1.088,179.1,0.278
+canlab2018_mean_V_Striatum_L,mechanical,0.065,"[-0.002, 0.133]",0.034,1.906,150.8,0.058
+canlab2018_mean_V_Striatum_R,thermal,0.068,"[ 0.007, 0.129]",0.031,2.176,991.1,0.03
+canlab2018_mean_V_Striatum_R,mechanical,0.072,"[     0, 0.145]",0.037,1.966,140.2,0.051
+canlab2018_mean_Bstem_PAG,thermal,0.1,"[ 0.033, 0.167]",0.034,2.947,134.5,0.004
+canlab2018_mean_Bstem_PAG,mechanical,0.167,"[ 0.096, 0.239]",0.036,4.698,49.6,0
+rank_nps,thermal,0.158,"[ 0.094, 0.222]",0.033,4.843,159.8,0
+rank_nps,mechanical,0.14,"[ 0.078, 0.202]",0.032,4.429,258.4,0
+rank_siips,thermal,0.207,"[ 0.144,  0.27]",0.032,6.474,170.3,0
+rank_siips,mechanical,0.181,"[ 0.113, 0.249]",0.034,5.275,177,0

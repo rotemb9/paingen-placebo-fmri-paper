@@ -1,0 +1,247 @@
+% This script evaluates brain scores for a-priori (mostly pre-registered)
+% brain signatures  and ROIs, and saves the data
+% note that you need:
+% 1) canlab tools (see https://canlab.github.io/)
+% 2) The merged pain-evoked beta files, which are openly available on
+% OpenNeuro, in the 'derivatives' directory of the paingen_placebo dataset
+% (ds004746; derivatives/merged_firstlvl_stim_betas_sm_6mm.nii.gz).
+% written by Rotem Botvinik-Nezer
+
+
+%% CHANGE PATHS TO YOUR LOCAL PATHS
+% add canlab tools to path
+addpath(genpath('change to the local path of your copy of canlab tools'));
+
+%% read the data
+main_dir = pwd; % change the main_dir to the local path where you put the data
+z_score = true; % if true, z scores behavioral and brain measures within modality
+if z_score
+    warning('z-scoring all measures');
+end
+
+%% read behavioral data
+tt = readtable(fullfile(main_dir, 'merged_firstlvl_stim_betas_to_share.csv'));
+% recode condition variables
+tt.prodicaine = tt.prodicaine - 0.5; % new coding: 0.5=placebo, -0.5=control
+tt.heat = tt.heat - 0.5; % new coding: 0.5=thermal, -0.5=mechanical
+tt.stimLvl = (tt.stimLvl - 4) * 0.5; % new coding: 0.5=high, 0=medium, -0.5=low
+tt.zygosity = (contains(tt.twin_ID, 'DZ') | contains(tt.twin_ID, 'OS')) + 1; % zygosity coding: 1=monozygotic, 2=dizygotic
+% code variables at the twin pair level
+tt.int_mz(tt.zygosity == 1) = 1;
+tt.int_dz(tt.zygosity == 2) = 1;
+tt.stim_mz(tt.zygosity == 1) = tt.stimLvl(tt.zygosity == 1);
+tt.heat_mz(tt.zygosity == 1) = tt.heat(tt.zygosity == 1);
+tt.prodicaine_mz(tt.zygosity == 1) = tt.prodicaine(tt.zygosity == 1);
+tt.stim_dz(tt.zygosity == 2) = tt.stimLvl(tt.zygosity == 2);
+tt.heat_dz(tt.zygosity == 2) = tt.heat(tt.zygosity == 2);
+tt.prodicaine_dz(tt.zygosity == 2) = tt.prodicaine(tt.zygosity == 2);
+
+behav_var = tt.Properties.VariableNames;
+
+%% compute brain scores for the a-priori (mostly pre-registered) patterns and ROIs
+% get the brain data (you need to download this from OpenNeuro and put it
+% in your main_dir
+dat = fmri_data(fullfile(main_dir, 'merged_firstlvl_stim_betas_sm_6mm.nii.gz'));
+
+% NPS
+nps = apply_nps(dat,'noverbose');
+
+% SIIPS
+[siips, image_names, data_objects, siipspos_exp_by_region, siipsneg_exp_by_region, siipspos, siipsneg] = apply_siips(dat,'noverbose');
+
+% nociceptive regions (from pain_pathway atlas)
+pain_pathways = load_atlas(which('pain_pathways_atlas_obj.mat'));
+pain_pathways = pain_pathways.select_atlas_subset({'dpIns', 'aMCC_MPFC', 'Thal_VPLM','Thal_MD'});
+pain_pathways_mean = extract_roi_averages(dat, fmri_data(pain_pathways), 'unique_mask_values', 'nonorm');
+
+% higher level regions + PAG (from canlab_2018 atlas)
+canlab2018 = load_atlas('canlab2018_2mm');
+canlab2018 = canlab2018.select_atlas_subset({'Ctx_p9_46v_R','Ctx_8C_L','Ctx_46_L','Ctx_a10p_R','Ctx_p10p_R','Ctx_a47r_R','V_Striatum_R','V_Striatum_L', 'Ctx_11l_L', 'Ctx_11l_R', 'Bstem_PAG'});
+canlab2018_mean = extract_roi_averages(dat, fmri_data(canlab2018), 'unique_mask_values', 'nonorm');
+
+% compute averages for CSF, white and gray matter
+gm_wm_csf = extract_gray_white_csf(dat);
+
+%% add measures to tt table
+tt.gray_matter = gm_wm_csf(:,1);
+tt.white_matter = gm_wm_csf(:,2);
+tt.csf = gm_wm_csf(:,3);
+tt.nps = nps{1};
+tt.siips = siips{1};
+tt.siipspos_dmPFC = siipspos_exp_by_region{1}(:,16);
+tt.siipspos_R_MTG = siipspos_exp_by_region{1}(:,4);
+tt.siipsneg_R_LG = siipsneg_exp_by_region{1}(:,8);
+tt.siipsneg_L_STG = siipsneg_exp_by_region{1}(:,13);
+tt.siipsneg_L_NAc = siipsneg_exp_by_region{1}(:,7);
+tt.siipsneg_R_TP = siipsneg_exp_by_region{1}(:,3);
+tt.siipsneg_L_ITG = siipsneg_exp_by_region{1}(:,5);
+tt.siipsneg_mid_precen = siipsneg_exp_by_region{1}(:,22);
+tt.siipsneg_vmpfc = siipsneg_exp_by_region{1}(:,6);
+% siips sub regions that are "suppressors"- negative weights, positive
+% correlation with stim intensity (in the SIIPS paper) that is significant
+% (p<.05, without correction)
+tt.suppress_siipsneg_R_NAc = siipsneg_exp_by_region{1}(:,11);
+tt.suppress_siipsneg_L_dlPFC = siipsneg_exp_by_region{1}(:,15);
+tt.suppress_siipsneg_R_dlPFC = siipsneg_exp_by_region{1}(:,16);
+tt.suppress_siipsneg_R_S2 = siipsneg_exp_by_region{1}(:,17);
+tt.suppress_siipsneg_R_SMC = siipsneg_exp_by_region{1}(:,18);
+tt.suppress_siipsneg_L_Precun = siipsneg_exp_by_region{1}(:,23);
+
+for ind = 1:length(pain_pathways_mean)
+    eval(sprintf('tt.pain_pathways_%s = pain_pathways_mean(%d).dat;', pain_pathways.labels{ind}, ind));
+end
+for ind = 1:length(canlab2018_mean)
+    eval(sprintf('tt.canlab2018_mean_%s = canlab2018_mean(%d).dat;', canlab2018.labels{ind}, ind));
+end
+
+brain_var = tt.Properties.VariableNames;
+brain_var = brain_var(~ismember(brain_var, behav_var));
+% outcome = [{'Yint', 'Yunp'}, brain_var];
+
+%% exclude participants without full conditions for at least two stimulus levels (based on the pre-registration)
+uniq_participant_ID = unique(tt.participant_ID,'stable');
+good_ind = [];
+for sub_ind = 1:length(uniq_participant_ID)
+    this_ind = find(strcmp(tt.participant_ID, uniq_participant_ID(sub_ind)));
+    if length(this_ind) >= 11
+        % the participant has full 4 conditions for at least two
+        % stimulus levels
+        tt.exclude(strcmp(tt.participant_ID, uniq_participant_ID(sub_ind))) = 0;
+    else
+        % need to check if the 4 conditions are available for at least two stimulus levels
+        disp(sub_ind)
+        disp(uniq_participant_ID(sub_ind))
+        conds_avail = [sum(tt.stimLvl(this_ind) > 0 & tt.heat(this_ind) > 0 & tt.prodicaine(this_ind) > 0),...
+                       sum(tt.stimLvl(this_ind) > 0 & tt.heat(this_ind) > 0 & tt.prodicaine(this_ind) <= 0),...
+                       sum(tt.stimLvl(this_ind) > 0 & tt.heat(this_ind) <= 0 & tt.prodicaine(this_ind) > 0),...
+                       sum(tt.stimLvl(this_ind) > 0 & tt.heat(this_ind) <= 0 & tt.prodicaine(this_ind) <= 0);
+                       sum(tt.stimLvl(this_ind) == 0 & tt.heat(this_ind) > 0 & tt.prodicaine(this_ind) > 0),...
+                       sum(tt.stimLvl(this_ind) == 0 & tt.heat(this_ind) > 0 & tt.prodicaine(this_ind) <= 0),...
+                       sum(tt.stimLvl(this_ind) == 0 & tt.heat(this_ind) <= 0 & tt.prodicaine(this_ind) > 0),...
+                       sum(tt.stimLvl(this_ind) == 0 & tt.heat(this_ind) <= 0 & tt.prodicaine(this_ind) <= 0);
+                       sum(tt.stimLvl(this_ind) < 0 & tt.heat(this_ind) > 0 & tt.prodicaine(this_ind) > 0),...
+                       sum(tt.stimLvl(this_ind) < 0 & tt.heat(this_ind) > 0 & tt.prodicaine(this_ind) <= 0),...
+                       sum(tt.stimLvl(this_ind) < 0 & tt.heat(this_ind) <= 0 & tt.prodicaine(this_ind) > 0),...
+                       sum(tt.stimLvl(this_ind) < 0 & tt.heat(this_ind) <= 0 & tt.prodicaine(this_ind) <= 0)];
+        if sum(any(conds_avail == 0)) > 1
+           tt.exclude(strcmp(tt.participant_ID, uniq_participant_ID(sub_ind))) = 1;
+        else
+           tt.exclude(strcmp(tt.participant_ID, uniq_participant_ID(sub_ind))) = 0; 
+        end
+    end
+end
+fprintf('QC: dropped %d trials (%0.2f%%), from %d participants\n%d participants remaining.\n',sum(tt.exclude), sum(tt.exclude)/height(tt)*100, length(uniq_participant_ID) - length(unique(tt.participant_ID(~tt.exclude))),length(unique(tt.participant_ID(~tt.exclude))));
+
+%% save data with and without excluded
+tt_all = tt;
+tt = tt(~tt.exclude,:);
+tt.exclude = [];
+writetable(tt,fullfile(main_dir, 'pain_evoked_brain_measures.csv'));
+%writetable(tt_all,fullfile(main_dir, 'pain_evoked_brain_measures_with_excluded.csv'));
+
+%% z score if desired
+if z_score
+    measures_to_z_score = [{'Yint', 'Yunp'}, brain_var];
+    tt_raw = tt;
+    % z-score measures
+    for ind = 1:length(measures_to_z_score)
+        cur_measure = measures_to_z_score{ind};
+        % z-score within thermal
+        tt{~isnan(tt{:,cur_measure}) & tt.heat > 0, cur_measure} = zscore(tt{~isnan(tt{:,cur_measure}) & tt.heat > 0,cur_measure});
+        % z-score within mechanical
+        tt{~isnan(tt{:,cur_measure}) & tt.heat <= 0, cur_measure} = zscore(tt{~isnan(tt{:,cur_measure}) & tt.heat <= 0,cur_measure});        
+    end
+    writetable(tt,fullfile(main_dir, 'pain_evoked_brain_measures_z.csv'));
+end
+
+%% create a table with pain analgesia measures (control - placebo)
+% compute pain ratings and brain scores for control minus placebo for each modality and
+% stim level of each participant
+uniq_participant_ID = unique(tt.participant_ID,'stable');
+uniq_heat = unique(tt.heat);
+uniq_stimLvl = unique(tt.stimLvl);
+table_ind = 1;
+skipped_conditions = 0;
+ind_brain_measures = find(strcmp(tt.Properties.VariableNames, brain_var{1}));
+for sub_ind = 1:length(uniq_participant_ID)
+    for stimLvl_ind = 1:length(uniq_stimLvl)
+        for heat_ind = 1:length(uniq_heat)
+            stim_level(table_ind) = uniq_stimLvl(stimLvl_ind);
+            sub_id{table_ind} = uniq_participant_ID{sub_ind};
+            heat(table_ind) = uniq_heat(heat_ind);
+            % first make sure the participant has data for both placebo and
+            % control in this condition
+            % if not, skip (and keep count)
+            if sum(tt.heat == heat(table_ind) & strcmp(tt.participant_ID, sub_id(table_ind)) & tt.stimLvl == stim_level(table_ind) & tt.prodicaine == -0.5) ~= 1 || sum(tt.heat == heat(table_ind) & strcmp(tt.participant_ID, sub_id(table_ind)) & tt.stimLvl == stim_level(table_ind) & tt.prodicaine == 0.5) ~= 1
+               skipped_conditions = skipped_conditions + 1;
+               fprintf('%d skipping %d for sub %d heat %d level %d\n', skipped_conditions, table_ind, sub_id{table_ind}, heat(table_ind), stim_level(table_ind));
+               continue;
+            end
+            prodicaine(table_ind) = {'control_minus_placebo'};
+            twin_info(table_ind,:) = tt(tt.heat == heat(table_ind) & strcmp(tt.participant_ID, sub_id(table_ind)) & tt.stimLvl == stim_level(table_ind) & tt.prodicaine == -0.5,ismember(tt.Properties.VariableNames,{'twin_ID', 'family_ID', 'sex', 'age' 'stim_mz', 'heat_mz', 'prodicaine_mz', 'int_mz', 'stim_dz', 'heat_dz', 'prodicaine_dz', 'int_dz'}));
+            if z_score
+                outcome_info(table_ind,:) = tt_raw{tt.heat == heat(table_ind) & strcmp(tt.participant_ID, sub_id(table_ind)) & tt.stimLvl == stim_level(table_ind) & tt.prodicaine == -0.5, [find(strcmp(tt_raw.Properties.VariableNames, 'Yint')), ind_brain_measures:end]} - tt_raw{tt.heat == heat(table_ind) & strcmp(tt.participant_ID, sub_id(table_ind)) & tt.stimLvl == stim_level(table_ind) & tt.prodicaine == 0.5, [find(strcmp(tt_raw.Properties.VariableNames, 'Yint')), ind_brain_measures:end]};
+            else
+                outcome_info(table_ind,:) = tt{tt.heat == heat(table_ind) & strcmp(tt.participant_ID, sub_id(table_ind)) & tt.stimLvl == stim_level(table_ind) & tt.prodicaine == -0.5, [find(strcmp(tt.Properties.VariableNames, 'Yint')), ind_brain_measures:end]} - tt{tt.heat == heat(table_ind) & strcmp(tt.participant_ID, sub_id(table_ind)) & tt.stimLvl == stim_level(table_ind) & tt.prodicaine == 0.5, [find(strcmp(tt.Properties.VariableNames, 'Yint')), ind_brain_measures:end]};
+            end
+            table_ind = table_ind + 1;
+        end
+    end
+end
+
+
+% create a table with the data for the analgesia models
+analgesia_table = table(sub_id', stim_level', heat', prodicaine','VariableNames', {'participant_ID', 'stimLvl', 'heat', 'prodicaine'});
+outcome_info_table = array2table(outcome_info);
+
+if z_score
+    outcome_info_table.Properties.VariableNames = ['Yint', tt_raw.Properties.VariableNames(ind_brain_measures:end)];
+else
+    outcome_info_table.Properties.VariableNames = ['Yint', tt.Properties.VariableNames(ind_brain_measures:end)]; 
+end
+
+% also compute rank order difference
+measures_to_rank = {'Yint', 'nps', 'siips'};
+ranks = zeros(height(outcome_info_table), length(measures_to_rank));
+for measure_ind = 1:length(measures_to_rank)
+    cur_measure = measures_to_rank{measure_ind};
+    for stim_level_ind = 1:length(uniq_stimLvl)
+        cur_stim_level = uniq_stimLvl(stim_level_ind);
+        for modality_ind = 1:length(uniq_heat)
+            cur_modality = uniq_heat(modality_ind);
+            [~,i] = sort(outcome_info_table{analgesia_table.stimLvl == cur_stim_level & analgesia_table.heat == cur_modality, cur_measure});
+            all_ranks = 1:sum(analgesia_table.stimLvl == cur_stim_level & analgesia_table.heat == cur_modality);
+            all_ranks(i) = all_ranks;
+            ranks(analgesia_table.stimLvl == cur_stim_level & analgesia_table.heat == cur_modality, measure_ind) = all_ranks;
+        end
+    end
+end
+
+ranks = array2table(ranks);
+ranks.Properties.VariableNames = strcat('rank_', measures_to_rank);
+
+if z_score
+    analgesia_table_raw = horzcat(analgesia_table, twin_info, outcome_info_table, ranks);
+    writetable(analgesia_table_raw, fullfile(main_dir, 'pain_evoked_analgesia.csv'));
+    % z score differences
+    for i = 1:width(outcome_info_table)
+        cur_measure = outcome_info_table.Properties.VariableNames{i};
+        % thermal
+        outcome_info_table{~isnan(outcome_info_table{:,cur_measure}) & analgesia_table.heat > 0, cur_measure} = zscore(outcome_info_table{~isnan(outcome_info_table{:,cur_measure}) & analgesia_table.heat > 0,cur_measure});
+        % mechanical
+        outcome_info_table{~isnan(outcome_info_table{:,cur_measure}) & analgesia_table.heat <= 0, cur_measure} = zscore(outcome_info_table{~isnan(outcome_info_table{:,cur_measure}) & analgesia_table.heat <= 0,cur_measure});       
+    end
+    
+    analgesia_table = horzcat(analgesia_table, twin_info, outcome_info_table, ranks);
+    % save table as csv file
+    writetable(analgesia_table, fullfile(main_dir, 'pain_evoked_analgesia_z.csv'));
+else
+    analgesia_table = horzcat(analgesia_table, twin_info, outcome_info_table, ranks);
+    % save table as csv file
+    writetable(analgesia_table, fullfile(main_dir, 'pain_evoked_analgesia.csv'));    
+end
+
+% how many conditions were removed because of missing data?
+table_expected_length = length(uniq_participant_ID) * 6; % we expect 6 conditions per participant (2 modalities X 3 stimulus level)
+fprintf('QC: dropped %d (%0.2f%%) conditions without complete data\n', skipped_conditions, skipped_conditions / table_expected_length * 100);
+fprintf('analgesia table includes data from %d participants\n', length(unique(analgesia_table.participant_ID)));
