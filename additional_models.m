@@ -14,7 +14,7 @@ if z_score
     tt = readtable(fullfile(data_path, 'pain_evoked_brain_measures_z.csv'));
     analgesia_table = readtable(fullfile(data_path, 'pain_evoked_analgesia_z.csv'));
     tt_raw = readtable(fullfile(data_path, 'pain_evoked_brain_measures.csv'));
-    %analgesia_table_raw = readtable(fullfile(data_path, 'pain_evoked_analgesia.csv'));
+    analgesia_table_raw = readtable(fullfile(data_path, 'pain_evoked_analgesia.csv'));
 else
     tt = readtable(fullfile(data_path, 'pain_evoked_brain_measures.csv'));
     analgesia_table = readtable(fullfile(data_path, 'pain_evoked_analgesia.csv'));
@@ -176,21 +176,69 @@ analgesia_thermal_mechanical_comp_nps = fitlme(analgesia_table, 'nps ~ stimLvl +
 analgesia_thermal_mechanical_comp_siips = fitlme(analgesia_table, 'siips ~ stimLvl + heat + (stimLvl + heat | family_ID) + (stim_mz + heat_mz + int_mz -1 | participant_ID) + (stim_dz + heat_dz + int_dz -1 | participant_ID)','FitMethod','REML');
 [~,~,STATS_analgesia_thermal_mechanical_comp_siips] = fixedEffects(analgesia_thermal_mechanical_comp_siips,'dfmethod','satterthwaite');
 
-%%% compute NPS effect size for pain vs. rest (baseline)
+%%% compute pain ratings, NPS and SIIPS effect sizes for pain vs. rest (baseline)
 % get the mean response for each participant
 % compute mean, SD and Cohen's d
 sids = unique(tt_raw.participant_ID);
 num_subjs = length(sids);
-NPS_mean_heat = zeros(num_subjs, 1);
-NPS_mean_press = zeros(num_subjs, 1);
+[Yint_mean_analgesia_heat, Yint_mean_analgesia_press, NPS_mean_heat, NPS_mean_press, NPS_mean_analgesia_heat, NPS_mean_analgesia_press, SIIPS_mean_heat, SIIPS_mean_press, SIIPS_mean_analgesia_heat, SIIPS_mean_analgesia_press] = deal(zeros(num_subjs, 1));
 for sub_ind = 1:num_subjs
    cur_sid = sids(sub_ind);
+   
+   % Yint
+   Yint_mean_analgesia_heat(sub_ind) = mean(analgesia_table_raw.Yint(strcmp(analgesia_table_raw.participant_ID, cur_sid) & analgesia_table_raw.heat > 0));  
+   Yint_mean_analgesia_press(sub_ind) = mean(analgesia_table_raw.Yint(strcmp(analgesia_table_raw.participant_ID, cur_sid) & analgesia_table_raw.heat < 0));  
+   
+   % NPS
    NPS_mean_heat(sub_ind) = mean(tt_raw.nps(strcmp(tt_raw.participant_ID, cur_sid) & tt_raw.heat > 0));  
-   NPS_mean_press(sub_ind) = mean(tt_raw.nps(strcmp(tt_raw.participant_ID, cur_sid) & tt_raw.heat < 0));  
+   NPS_mean_press(sub_ind) = mean(tt_raw.nps(strcmp(tt_raw.participant_ID, cur_sid) & tt_raw.heat < 0));
+   NPS_mean_analgesia_heat(sub_ind) = mean(analgesia_table_raw.nps(strcmp(analgesia_table_raw.participant_ID, cur_sid) & analgesia_table_raw.heat > 0));  
+   NPS_mean_analgesia_press(sub_ind) = mean(analgesia_table_raw.nps(strcmp(analgesia_table_raw.participant_ID, cur_sid) & analgesia_table_raw.heat < 0));  
+   
+   % SIIPS
+   SIIPS_mean_heat(sub_ind) = mean(tt_raw.siips(strcmp(tt_raw.participant_ID, cur_sid) & tt_raw.heat > 0));  
+   SIIPS_mean_press(sub_ind) = mean(tt_raw.siips(strcmp(tt_raw.participant_ID, cur_sid) & tt_raw.heat < 0)); 
+   SIIPS_mean_analgesia_heat(sub_ind) = mean(analgesia_table_raw.siips(strcmp(analgesia_table_raw.participant_ID, cur_sid) & analgesia_table_raw.heat > 0));  
+   SIIPS_mean_analgesia_press(sub_ind) = mean(analgesia_table_raw.siips(strcmp(analgesia_table_raw.participant_ID, cur_sid) & analgesia_table_raw.heat < 0));  
 end
+
+% Yint
+yint_mean_analgesia_heat = mean(Yint_mean_analgesia_heat(~isnan(Yint_mean_analgesia_heat)));
+yint_sd_analgesia_heat = std(Yint_mean_analgesia_heat(~isnan(Yint_mean_analgesia_heat)));
+yint_analgesia_d_heat = yint_mean_analgesia_heat/yint_sd_analgesia_heat;
+yint_mean_analgesia_press = mean(Yint_mean_analgesia_press(~isnan(Yint_mean_analgesia_press)));
+yint_sd_analgesia_press = std(Yint_mean_analgesia_press(~isnan(Yint_mean_analgesia_press)));
+yint_analgesia_d_press = yint_mean_analgesia_press/yint_sd_analgesia_press;
+
+% nps
+% pain vs. rest
 nps_mean_heat = mean(NPS_mean_heat);
 nps_sd_heat = std(NPS_mean_heat);
 nps_pain_rest_d_heat = nps_mean_heat/nps_sd_heat;
 nps_mean_press = mean(NPS_mean_press);
 nps_sd_press = std(NPS_mean_press);
 nps_pain_rest_d_press = nps_mean_press/nps_sd_press;
+% placebo vs. control (analgesia)
+nps_mean_analgesia_heat = mean(NPS_mean_analgesia_heat);
+nps_sd_analgesia_heat = std(NPS_mean_analgesia_heat);
+nps_analgesia_d_heat = nps_mean_analgesia_heat/nps_sd_analgesia_heat;
+nps_mean_analgesia_press = mean(NPS_mean_analgesia_press);
+nps_sd_analgesia_press = std(NPS_mean_analgesia_press);
+nps_analgesia_d_press = nps_mean_analgesia_press/nps_sd_analgesia_press;
+
+% SIIPS
+% pain vs. rest
+siips_mean_heat = mean(SIIPS_mean_heat);
+siips_sd_heat = std(SIIPS_mean_heat);
+siips_pain_rest_d_heat = siips_mean_heat/siips_sd_heat;
+siips_mean_press = mean(SIIPS_mean_press);
+siips_sd_press = std(SIIPS_mean_press);
+siips_pain_rest_d_press = siips_mean_press/siips_sd_press;
+% placebo vs. control (analgesia)
+siips_mean_analgesia_heat = mean(SIIPS_mean_analgesia_heat);
+siips_sd_analgesia_heat = std(SIIPS_mean_analgesia_heat);
+siips_analgesia_d_heat = siips_mean_analgesia_heat/siips_sd_analgesia_heat;
+siips_mean_analgesia_press = mean(SIIPS_mean_analgesia_press);
+siips_sd_analgesia_press = std(SIIPS_mean_analgesia_press);
+siips_analgesia_d_press = siips_mean_analgesia_press/siips_sd_analgesia_press;
+
