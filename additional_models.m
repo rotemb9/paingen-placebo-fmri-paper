@@ -98,7 +98,8 @@ analgesia_table = renamevars(analgesia_table, {'participant_ID_analgesia_table'}
 
 tt = outerjoin(tt, expectation_data);
 tt = removevars(tt, 'participant_ID_expectation_data');
-tt = renamevars(tt, {'participant_ID_tt', 'prodicaine_expect_post'}, {'participant_ID', 'expect'});
+%tt = renamevars(tt, {'participant_ID_tt', 'prodicaine_expect_post'}, {'participant_ID', 'expect'});
+tt = renamevars(tt, 'participant_ID_tt', 'participant_ID');
 analgesia_table.expect_z(:) = nan;
 analgesia_table.expect_z(analgesia_table.heat > 0 & ~isnan(analgesia_table.expect)) = zscore(analgesia_table.expect(analgesia_table.heat > 0 & ~isnan(analgesia_table.expect)));
 analgesia_table.expect_z(analgesia_table.heat <= 0 & ~isnan(analgesia_table.expect)) = zscore(analgesia_table.expect(analgesia_table.heat <= 0 & ~isnan(analgesia_table.expect)));
@@ -175,6 +176,54 @@ analgesia_thermal_mechanical_comp_nps = fitlme(analgesia_table, 'nps ~ stimLvl +
 % siips
 analgesia_thermal_mechanical_comp_siips = fitlme(analgesia_table, 'siips ~ stimLvl + heat + (stimLvl + heat | family_ID) + (stim_mz + heat_mz + int_mz -1 | participant_ID) + (stim_dz + heat_dz + int_dz -1 | participant_ID)','FitMethod','REML');
 [~,~,STATS_analgesia_thermal_mechanical_comp_siips] = fixedEffects(analgesia_thermal_mechanical_comp_siips,'dfmethod','satterthwaite');
+
+%% compare placebo effects in NPS vs. SIIPS directly
+tt.prodicaine_label(tt.prodicaine > 0) = {'placebo'};
+tt.prodicaine_label(tt.prodicaine < 0) = {'control'};
+uniq_heat = [-0.5, 0.5];
+uniq_stimLvl = [-0.5, 0, 0.5];
+table_ind = 1;
+skipped_conditions = 0;
+sids = unique(tt.participant_ID);
+for sub_ind = 1:length(sids)
+    for stimLvl_ind = 1:length(uniq_stimLvl)
+        for heat_ind = 1:length(uniq_heat)
+            stim_level(table_ind,1) = uniq_stimLvl(stimLvl_ind);
+            participant_ID{table_ind,1} = sids{sub_ind};
+            heat(table_ind,1) = uniq_heat(heat_ind);
+            cur_data = tt(tt.heat == heat(table_ind) & strcmp(tt.participant_ID, participant_ID(table_ind)) & tt.stimLvl == stim_level(table_ind), :);
+            % first make sure the participant has data for both placebo and
+            % control in this condition
+            % if not, skip (and keep count)
+            if height(cur_data) < 2
+               skipped_conditions = skipped_conditions + 1;
+               fprintf('%d skipping, not enough data for sub %s heat %f level %f\n', skipped_conditions, participant_ID{table_ind}, heat(table_ind), stim_level(table_ind));
+               continue;
+            end 
+            twin_info(table_ind,:) = cur_data(1,ismember(cur_data.Properties.VariableNames,{'twin_ID', 'family_ID', 'zygosity', 'sex', 'age' 'stim_mz', 'heat_mz', 'int_mz', 'stim_dz', 'heat_dz', 'int_dz'}));
+            nps(table_ind,1) = cur_data.nps(cur_data.prodicaine < 0) - cur_data.nps(cur_data.prodicaine > 0);
+            siips(table_ind,1) = cur_data.siips(cur_data.prodicaine < 0) - cur_data.siips(cur_data.prodicaine > 0);
+            table_ind = table_ind + 1;
+        end
+    end
+end
+analgesia_nps_siips = table(participant_ID, heat, stim_level, nps, siips);
+analgesia_nps_siips = [analgesia_nps_siips, twin_info];
+analgesia_nps_siips = stack(analgesia_nps_siips, {'nps', 'siips'}, 'NewDataVariableName', 'control_minus_placebo', 'IndexVariableName', 'neuromarker');
+
+analgesia_nps_siips.neuromarker_numeric(analgesia_nps_siips.neuromarker == 'siips') = 0.5;
+analgesia_nps_siips.neuromarker_numeric(analgesia_nps_siips.neuromarker == 'nps') = -0.5;
+
+analgesia_nps_siips.neuromarker_mz(analgesia_nps_siips.zygosity == 1) = analgesia_nps_siips.neuromarker_numeric(analgesia_nps_siips.zygosity == 1);
+analgesia_nps_siips.neuromarker_dz(analgesia_nps_siips.zygosity == 2) = analgesia_nps_siips.neuromarker_numeric(analgesia_nps_siips.zygosity == 2);
+
+% thermal
+placebo_nps_vs_siips_heat = fitlme(analgesia_nps_siips(analgesia_nps_siips.heat > 0, :), 'control_minus_placebo ~ neuromarker_numeric + stim_level + (1 + neuromarker_numeric + stim_level | family_ID) + (neuromarker_mz + stim_mz + int_mz -1 | participant_ID) + (neuromarker_dz + stim_dz + int_dz -1 | participant_ID)','FitMethod','REML');
+[~,~,STATS_placebo_nps_vs_siips_heat] = fixedEffects(placebo_nps_vs_siips_heat,'dfmethod','satterthwaite');
+% mechanical
+placebo_nps_vs_siips_press = fitlme(analgesia_nps_siips(analgesia_nps_siips.heat < 0, :), 'control_minus_placebo ~ neuromarker_numeric + stim_level + (1 + neuromarker_numeric + stim_level | family_ID) + (neuromarker_mz + stim_mz + int_mz -1 | participant_ID) + (neuromarker_dz + stim_dz + int_dz -1 | participant_ID)','FitMethod','REML');
+[~,~,STATS_placebo_nps_vs_siips_press] = fixedEffects(placebo_nps_vs_siips_press,'dfmethod','satterthwaite');
+
 
 %%% compute pain ratings, NPS and SIIPS effect sizes for pain vs. rest (baseline)
 % get the mean response for each participant
