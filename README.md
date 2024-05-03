@@ -1,5 +1,5 @@
 # paingen-placebo-fmri-paper
-Code and (behavioral) data for the paper on placebo effects based on the Paingen dataset.
+Code and (behavioral) data for the paper on placebo effects based on the Paingen dataset. The preprint is available here: https://www.biorxiv.org/content/10.1101/2023.09.21.558825v2.
 The MRI dataset is available on OpenNeuro, ds004746 (doi:10.18112/openneuro.ds004746.v1.0.0).
 
 Since the sample includes twins, participant ID, twin ID and family ID are available in most data files. The first two letters of the twin_ID indicate the twin type (MZ = monozygotic, DZ = dizygotic, OS = dizygotic opposite sex).
